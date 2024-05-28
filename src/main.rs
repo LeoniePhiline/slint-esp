@@ -82,15 +82,38 @@ fn main() {
             move || {
                 let ui = ui_handle.unwrap();
 
+                // Previous reading had data.
+                let had_data = ui.global::<ViewModel>().get_have_data();
+
+                // Latest reading has data.
                 let have_data = HAVE_DATA.load(Ordering::Relaxed);
 
-                ui.global::<ViewModel>().set_have_data(have_data);
+                // Set current reading having data if this is the first good reading.
+                if had_data {
+                    log::warn!("Waiting for initial data.");
+                } else {
+                    log::info!("Got initial data.");
+
+                    ui.global::<ViewModel>().set_have_data(have_data);
+                }
+
+                // Keep `have_data: true` after data has been set once since boot.
+                // Only flip the `stale_data` flag to keep showing the last good reading.
+                if had_data {
+                    if have_data {
+                        log::info!("Data is fresh.");
+                    } else {
+                        log::warn!("Data is stale.");
+                    }
+
+                    ui.global::<ViewModel>().set_stale_data(!have_data);
+                }
 
                 if !have_data {
                     return;
                 }
 
-                ui.global::<ViewModel>().set_weather(WeatherRecord {
+                let weather_record = WeatherRecord {
                     humidity: HUMIDITY.load(Ordering::Relaxed),
                     temperature: TEMPERATURE.load(Ordering::Relaxed),
                     // Format millisecond-resolution timestamp  as seconds.
@@ -98,9 +121,10 @@ fn main() {
                         "{:?}s",
                         TIMESTAMP.load(Ordering::Relaxed) / 1_000_000
                     ),
-                });
+                };
 
-                HAVE_DATA.store(false, Ordering::Relaxed);
+                ui.global::<ViewModel>().set_weather(weather_record.clone());
+                records.push(weather_record);
             }
         },
     );

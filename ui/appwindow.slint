@@ -8,7 +8,8 @@ struct WeatherRecord {
 }
 
 export global ViewModel {
-    in property <bool> have-data;
+    in property <bool> have-data: false;
+    in property <bool> stale-data: false;
     in property <WeatherRecord> weather;
     in property <[WeatherRecord]> reccords;
 }
@@ -50,12 +51,14 @@ export component AppWindow inherits Window {
 
         HorizontalLayout {
             TemperatureGauge {
-                has-value: ViewModel.have-data;
+                have-data: ViewModel.have-data;
+                stale-data: ViewModel.stale-data;
                 value: ViewModel.weather.temperature;
             }
 
             HumidityGauge {
-                has-value: ViewModel.have-data;
+                have-data: ViewModel.have-data;
+                stale-data: ViewModel.stale-data;
                 value: ViewModel.weather.humidity;
             }
         }

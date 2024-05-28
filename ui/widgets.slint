@@ -37,8 +37,9 @@ export component StatusBar inherits Rectangle {
 }
 
 export component BarGauge {
-    // TODO: Set empty defaults (no has-value, 0)
-    in property <bool> has-value: false;
+    in property <bool> have-data: false;
+    in property <bool> stale-data: false;
+
     in property <float> value: 100;
     in property <float> min-value: -100;
     in property <float> max-value: 100;
@@ -54,15 +55,29 @@ export component BarGauge {
 	    (Math.clamp(self.value, self.min-value, self.max-value) - self.min-value) / (self.max-value - self.min-value);
 
     states [
-        with-value when root.has-value: {
+        with-value when root.have-data && !root.stale-data: {
             gauge.border-color: Palette.border;
+            gauge.opacity: 0.5;
             value-text.visible: true;
+            value-text.opacity: 0.5;
             fill.visible: true;
+            fill.opacity: 0.5;
         }
-        without-value when !root.has-value: {
+        with-value when root.have-data && root.stale-data: {
+            gauge.border-color: Palette.border;
+            gauge.opacity: 1.0;
+            value-text.visible: true;
+            value-text.opacity: 1.0;
+            fill.visible: true;
+            fill.opacity: 1.0;
+        }
+        without-value when !root.have-data: {
             gauge.border-color: Palette.alternate-background;
+            gauge.opacity: 1.0;
             value-text.visible: false;
+            value-text.opacity: 1.0;
             fill.visible: false;
+            fill.opacity: 1.0;
         }
     ]
 
@@ -75,8 +90,13 @@ export component BarGauge {
         border-width: root.border-width;
         border-radius: root.gauge-width / 2;
 
-        clip: true;
         // Does not work in the software renderer.
+        clip: true;
+
+        animate opacity {
+            duration: 300ms;
+            easing: ease-out;
+        }
 
         fill := Rectangle {
             x: root.border-width;
@@ -91,8 +111,13 @@ export component BarGauge {
             border-bottom-right-radius: root.gauge-width / 2 - root.border-width;
 
             animate height {
-                duration: 200ms;
+                duration: 300ms;
                 easing: ease-in-out;
+            }
+
+            animate opacity {
+                duration: 300ms;
+                easing: ease-out;
             }
         }
     }
@@ -101,5 +126,10 @@ export component BarGauge {
         text: "" + Math.round(root.value * 10) / 10 + root.unit;
         font-size: 34px;
         x: root.gauge-width + LayoutMetrics.padding;
+
+        animate opacity {
+            duration: 300ms;
+            easing: ease-out;
+        }
     }
 }
