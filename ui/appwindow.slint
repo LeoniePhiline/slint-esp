@@ -1,4 +1,4 @@
-import { Button, VerticalBox, AboutSlint, Palette } from "std-widgets.slint";
+import { Button, VerticalBox, AboutSlint, Palette, TabWidget, ListView, HorizontalBox } from "std-widgets.slint";
 import { BarGauge, LayoutMetrics, TitleBar, StatusBar } from "widgets.slint";
 
 struct WeatherRecord {
@@ -11,7 +11,7 @@ export global ViewModel {
     in property <bool> have-data: false;
     in property <bool> stale-data: false;
     in property <WeatherRecord> weather;
-    in property <[WeatherRecord]> reccords;
+    in property <[WeatherRecord]> records;
 }
 
 component TemperatureGauge inherits BarGauge {
@@ -45,39 +45,60 @@ export component AppWindow inherits Window {
     height: LayoutMetrics.window-height;
 
     VerticalBox {
-        TitleBar {
-            text: "Slint Weather Station";
-        }
+        TabWidget {
+            Tab {
+                title: "Weather";
 
-        HorizontalLayout {
-            TemperatureGauge {
-                have-data: ViewModel.have-data;
-                stale-data: ViewModel.stale-data;
-                value: ViewModel.weather.temperature;
+                VerticalBox {
+                    HorizontalLayout {
+                        TemperatureGauge {
+                            have-data: ViewModel.have-data;
+                            stale-data: ViewModel.stale-data;
+                            value: ViewModel.weather.temperature;
+                        }
+
+                        HumidityGauge {
+                            have-data: ViewModel.have-data;
+                            stale-data: ViewModel.stale-data;
+                            value: ViewModel.weather.humidity;
+                        }
+                    }
+
+                    Button {
+                        text: "Increase counter";
+
+                        clicked => {
+                            root.request-increase-value();
+                        }
+                    }
+                }
             }
 
-            HumidityGauge {
-                have-data: ViewModel.have-data;
-                stale-data: ViewModel.stale-data;
-                value: ViewModel.weather.humidity;
-            }
-        }
-
-        Text {
-            horizontal-alignment: center;
-            text: "Counter: \{root.counter}";
-        }
-
-        Button {
-            text: "Increase value";
-
-            clicked => {
-                root.request-increase-value();
+            Tab {
+                title: "History";
+                ListView {
+                    for record in ViewModel.records : Rectangle {
+                        HorizontalBox {
+                            Text {
+                                horizontal-alignment: right;
+                                text: record.timestamp;
+                            }
+                            Text {
+                                horizontal-alignment: right;
+                                text: Math.round(record.temperature * 10) / 10 + " °C";
+                            }
+                            Text {
+                                horizontal-alignment: right;
+                                text: Math.round(record.humidity * 10) / 10 + " %";
+                            }
+                        }
+                    }
+                }
             }
         }
 
         StatusBar {
-            text: ViewModel.weather.timestamp;
+            text: ViewModel.weather.timestamp + " Counter: " + root.counter;
         }
     }
 }

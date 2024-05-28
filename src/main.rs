@@ -1,6 +1,8 @@
 use core::sync::atomic::Ordering;
+use std::rc::Rc;
 
 use portable_atomic::{AtomicBool, AtomicF32, AtomicI64};
+use slint::{ModelRc, ReverseModel, VecModel};
 
 slint::include_modules!();
 
@@ -72,6 +74,10 @@ fn main() {
             ui.set_counter(ui.get_counter() + 1);
         }
     });
+
+    let records: Rc<VecModel<WeatherRecord>> = Default::default();
+    ui.global::<ViewModel>()
+        .set_records(ModelRc::new(ReverseModel::new(Rc::clone(&records))));
 
     let timer = slint::Timer::default();
     timer.start(

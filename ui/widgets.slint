@@ -55,7 +55,7 @@ export component BarGauge {
 	    (Math.clamp(self.value, self.min-value, self.max-value) - self.min-value) / (self.max-value - self.min-value);
 
     states [
-        with-value when root.have-data && !root.stale-data: {
+        with-value when root.have-data && root.stale-data: {
             gauge.border-color: Palette.border;
             gauge.opacity: 0.5;
             value-text.visible: true;
@@ -63,7 +63,7 @@ export component BarGauge {
             fill.visible: true;
             fill.opacity: 0.5;
         }
-        with-value when root.have-data && root.stale-data: {
+        with-value when root.have-data && !root.stale-data: {
             gauge.border-color: Palette.border;
             gauge.opacity: 1.0;
             value-text.visible: true;
@@ -123,8 +123,8 @@ export component BarGauge {
     }
 
     value-text := Text {
-        text: "" + Math.round(root.value * 10) / 10 + root.unit;
-        font-size: 34px;
+        text: Math.round(root.value * 10) / 10 + root.unit;
+        font-size: 32px;
         x: root.gauge-width + LayoutMetrics.padding;
 
         animate opacity {
