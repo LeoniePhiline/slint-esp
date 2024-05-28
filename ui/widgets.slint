@@ -55,26 +55,28 @@ export component BarGauge {
 
     states [
         with-value when root.has-value: {
+            gauge.border-color: Palette.border;
             value-text.visible: true;
             fill.visible: true;
         }
         without-value when !root.has-value: {
+            gauge.border-color: Palette.alternate-background;
             value-text.visible: false;
             fill.visible: false;
         }
     ]
 
-    Rectangle {
+    gauge := Rectangle {
         x: 0;
 
         width: root.gauge-width;
         height: root.height;
 
         border-width: root.border-width;
-        border-color: Palette.border;
         border-radius: root.gauge-width / 2;
 
-        clip: true; // Does not work in the software renderer.
+        clip: true;
+        // Does not work in the software renderer.
 
         fill := Rectangle {
             x: root.border-width;
@@ -97,8 +99,7 @@ export component BarGauge {
 
     value-text := Text {
         text: "" + Math.round(root.value * 10) / 10 + root.unit;
-        font-size: 36px;
+        font-size: 34px;
         x: root.gauge-width + LayoutMetrics.padding;
     }
 }
-

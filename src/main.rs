@@ -1,7 +1,16 @@
+use core::sync::atomic::Ordering;
+
+use portable_atomic::{AtomicBool, AtomicF32, AtomicI64};
+
+slint::include_modules!();
+
 mod dht22;
 mod esp32;
 
-slint::include_modules!();
+static HAVE_DATA: AtomicBool = AtomicBool::new(false);
+static TEMPERATURE: AtomicF32 = AtomicF32::new(0.0);
+static HUMIDITY: AtomicF32 = AtomicF32::new(0.0);
+static TIMESTAMP: AtomicI64 = AtomicI64::new(0);
 
 unsafe extern "C" fn dht_task(_: *mut core::ffi::c_void) {
     let dht = dht22::DHT22::new(13);
@@ -10,12 +19,19 @@ unsafe extern "C" fn dht_task(_: *mut core::ffi::c_void) {
         match dht.read() {
             #[allow(unused_variables)]
             Ok((temperature, humidity)) => {
-                // TODO: Store sensor values somewhere
+                HAVE_DATA.store(true, Ordering::Relaxed);
+                TEMPERATURE.store(temperature, Ordering::Relaxed);
+                HUMIDITY.store(humidity, Ordering::Relaxed);
+                log::info!("Temperature: {temperature:.2} °C, Humidity: {humidity:.2} %");
             }
-            Err(e) => {
-                log::error!("Error reading DHT22: {:?}", e);
+            Err(err) => {
+                HAVE_DATA.store(false, Ordering::Relaxed);
+                log::error!("Error reading DHT22: {err:?}");
             }
         }
+
+        // Store time in microseconds since boot.
+        TIMESTAMP.store(esp_idf_svc::sys::esp_timer_get_time(), Ordering::Relaxed);
 
         esp_idf_svc::sys::vTaskDelay(2000 / 10);
     }
@@ -61,8 +77,31 @@ fn main() {
     timer.start(
         slint::TimerMode::Repeated,
         std::time::Duration::from_millis(2000),
-        move || {
-            // TODO: Update UI with sensor values
+        {
+            let ui_handle = ui.as_weak();
+            move || {
+                let ui = ui_handle.unwrap();
+
+                let have_data = HAVE_DATA.load(Ordering::Relaxed);
+
+                ui.global::<ViewModel>().set_have_data(have_data);
+
+                if !have_data {
+                    return;
+                }
+
+                ui.global::<ViewModel>().set_weather(WeatherRecord {
+                    humidity: HUMIDITY.load(Ordering::Relaxed),
+                    temperature: TEMPERATURE.load(Ordering::Relaxed),
+                    // Format millisecond-resolution timestamp  as seconds.
+                    timestamp: slint::format!(
+                        "{:?}s",
+                        TIMESTAMP.load(Ordering::Relaxed) / 1_000_000
+                    ),
+                });
+
+                HAVE_DATA.store(false, Ordering::Relaxed);
+            }
         },
     );
 

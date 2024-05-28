@@ -50,13 +50,13 @@ export component AppWindow inherits Window {
 
         HorizontalLayout {
             TemperatureGauge {
-                has-value: true;
-                value: 30;
+                has-value: ViewModel.have-data;
+                value: ViewModel.weather.temperature;
             }
 
             HumidityGauge {
-                has-value: true;
-                value: 45.8;
+                has-value: ViewModel.have-data;
+                value: ViewModel.weather.humidity;
             }
         }
 
