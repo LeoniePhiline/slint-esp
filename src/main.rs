@@ -1,4 +1,3 @@
-
 mod dht22;
 mod esp32;
 
@@ -12,7 +11,6 @@ unsafe extern "C" fn dht_task(_: *mut core::ffi::c_void) {
             #[allow(unused_variables)]
             Ok((temperature, humidity)) => {
                 // TODO: Store sensor values somewhere
-                
             }
             Err(e) => {
                 log::error!("Error reading DHT22: {:?}", e);
@@ -44,17 +42,29 @@ fn main() {
             std::ptr::null_mut(),
             5,
             &mut task_handle,
-            1
+            1,
         );
     }
 
     // Finally, run the app!
     let ui = AppWindow::new().expect("Failed to load UI");
 
-    let timer = slint::Timer::default();
-    timer.start(slint::TimerMode::Repeated, std::time::Duration::from_millis(2000), move || {
-        // TODO: Update UI with sensor values
+    ui.on_request_increase_value({
+        let ui_handle = ui.as_weak();
+        move || {
+            let ui = ui_handle.unwrap();
+            ui.set_counter(ui.get_counter() + 1);
+        }
     });
+
+    let timer = slint::Timer::default();
+    timer.start(
+        slint::TimerMode::Repeated,
+        std::time::Duration::from_millis(2000),
+        move || {
+            // TODO: Update UI with sensor values
+        },
+    );
 
     ui.run().unwrap();
 }

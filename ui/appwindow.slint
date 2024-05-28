@@ -1,17 +1,80 @@
-import { Button, VerticalBox } from "std-widgets.slint";
+import { Button, VerticalBox, AboutSlint, Palette } from "std-widgets.slint";
+import { BarGauge, LayoutMetrics, TitleBar, StatusBar } from "widgets.slint";
+
+struct WeatherRecord {
+    temperature: float, // Temperature in degrees Celsius
+    humidity: float,    // Humidity in percent
+    timestamp: string,
+}
+
+export global ViewModel {
+    in property <bool> have-data;
+    in property <WeatherRecord> weather;
+    in property <[WeatherRecord]> reccords;
+}
+
+component TemperatureGauge inherits BarGauge {
+    unit: " °C";
+    min-value: -25;
+    max-value: 50;
+    bar-color: Colors.hsv(320 - (root.level * 360), 1, 1);
+}
+
+component HumidityGauge inherits BarGauge {
+    unit: " %";
+    min-value: 0;
+
+    // TODO: Properly mix colors,
+    //       with balanced values in green
+    //       and extreme values in red.
+    // - Calculate distance between bar center and bar edges.
+    // - Balance red and green values, with green = close to center and red = far from center.
+    // - Keep blue at 0.
+    property <percent> extremity: 0%;
+    // value 0.5 -> extremity 0 %.
+    // value 0 or 1 -> extremity 100 %.
+    bar-color: #ff0000.mix(#0000ff, root.level);
+}
 
 export component AppWindow inherits Window {
-    in-out property<int> counter: 42;
+    in-out property <int> counter: 42;
     callback request-increase-value();
+
+    width: LayoutMetrics.window-width;
+    height: LayoutMetrics.window-height;
+
     VerticalBox {
+        TitleBar {
+            text: "Slint Weather Station";
+        }
+
+        HorizontalLayout {
+            TemperatureGauge {
+                has-value: true;
+                value: 30;
+            }
+
+            HumidityGauge {
+                has-value: true;
+                value: 45.8;
+            }
+        }
+
         Text {
+            horizontal-alignment: center;
             text: "Counter: \{root.counter}";
         }
+
         Button {
             text: "Increase value";
+
             clicked => {
                 root.request-increase-value();
             }
+        }
+
+        StatusBar {
+            text: ViewModel.weather.timestamp;
         }
     }
 }

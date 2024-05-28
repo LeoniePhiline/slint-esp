@@ -1,0 +1,104 @@
+import { Palette } from "std-widgets.slint";
+
+export global LayoutMetrics {
+    out property <length> window-width: 320px;
+    out property <length> window-height: 240px;
+
+    out property <length> padding: 5px;
+}
+
+export component TitleBar inherits Rectangle {
+    in property <string> text <=> title-text.text;
+
+    width: 100%;
+    height: 30px;
+    padding-top: LayoutMetrics.padding;
+    padding-bottom: LayoutMetrics.padding;
+    background: Palette.alternate-background;
+
+    title-text := Text {
+        font-size: 16px;
+    }
+}
+
+export component StatusBar inherits Rectangle {
+    in property <string> text <=> status-text.text;
+
+    height: 24px;
+    padding-top: LayoutMetrics.padding;
+    padding-bottom: LayoutMetrics.padding;
+    background: Palette.alternate-background;
+
+    status-text := Text {
+        height: root.height - 2 * LayoutMetrics.padding;
+        horizontal-alignment: center;
+        vertical-alignment: bottom;
+    }
+}
+
+export component BarGauge {
+    // TODO: Set empty defaults (no has-value, 0)
+    in property <bool> has-value: false;
+    in property <float> value: 100;
+    in property <float> min-value: -100;
+    in property <float> max-value: 100;
+
+    in property <string> unit: "";
+    in property <brush> bar-color <=> fill.background;
+
+    property <length> gauge-width: 30px;
+    property <length> border-width: 2px;
+
+    // Level is between 0 and 1
+	out property <float> level:
+	    (Math.clamp(self.value, self.min-value, self.max-value) - self.min-value) / (self.max-value - self.min-value);
+
+    states [
+        with-value when root.has-value: {
+            value-text.visible: true;
+            fill.visible: true;
+        }
+        without-value when !root.has-value: {
+            value-text.visible: false;
+            fill.visible: false;
+        }
+    ]
+
+    Rectangle {
+        x: 0;
+
+        width: root.gauge-width;
+        height: root.height;
+
+        border-width: root.border-width;
+        border-color: Palette.border;
+        border-radius: root.gauge-width / 2;
+
+        clip: true; // Does not work in the software renderer.
+
+        fill := Rectangle {
+            x: root.border-width;
+            y: parent.height - root.border-width - self.height;
+            height: (parent.height - 2 * root.border-width) * root.level;
+            width: parent.width - 2 * root.border-width;
+
+            background: Colors.red;
+
+            // Workaround for missing parent.clip software renderer support.
+            border-bottom-left-radius: root.gauge-width / 2 - root.border-width;
+            border-bottom-right-radius: root.gauge-width / 2 - root.border-width;
+
+            animate height {
+                duration: 200ms;
+                easing: ease-in-out;
+            }
+        }
+    }
+
+    value-text := Text {
+        text: "" + Math.round(root.value * 10) / 10 + root.unit;
+        font-size: 36px;
+        x: root.gauge-width + LayoutMetrics.padding;
+    }
+}
+
